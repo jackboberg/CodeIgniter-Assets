@@ -47,7 +47,14 @@ saved as a seperate cache.
 
     $this->assets->add($assets, $group_name);
 
-Groups can be combined. 
+Groups can be combined, allowing you to create a new group from existing groups.
+
+    $groups = array(
+        'typograghy',
+        'print',
+        'ui'
+    );
+    $this->assets->group('admin', $groups); 
 
 ### Outputing Links
 
