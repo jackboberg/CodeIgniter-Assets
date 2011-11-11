@@ -15,6 +15,11 @@ Load the library as normal:
     // optionally pass a config array
 	$this->load->library('assets', $config);
 
+All the public methods have aliased helper functions to make working with the 
+library easier in view files.
+
+    $this->load->helper('assets');
+
 
 ### Adding Assets
 
@@ -30,6 +35,9 @@ JS and CSS assets together, the library will manage them seperately for you.
     );
     $this->assets->add($assets);
 
+    // or use the helper alias
+    add_assets($assets);
+
 You can optionally define a pre-minimized asset.
 
     $asset = array(
@@ -37,7 +45,7 @@ You can optionally define a pre-minimized asset.
         'other.js',
         'file.js' => 'file.min.js'
     );
-    $this->assets->add($assets);
+    add_assets($assets);
 
 
 ### Using groups
@@ -54,20 +62,27 @@ Groups can be combined, allowing you to create a new group from existing groups.
         'print',
         'ui'
     );
-    $this->assets->group('admin', $groups); 
+    $this->assets->group('admin', $groups);
+
+    // or use the helper alias
+    group_assets('admin', $groups);
 
 ### Outputing Links
 
-In your views, a helper method allows you to retireve your packaged links.
+You can output all links, or just one asset type. The library will return strings 
+of HTML tags to be echoed in your view files.
+
+    echo $this->assets->get_assets();
+    // or use the helper alias
+    echo get_assets();
 
     // just the CSS
+    echo $this->assets->get_styles();
     echo get_styles();
 
     // just the JS
+    echo $this->assets->get_scripts();
     echo get_scripts();
-
-    // BOTH!
-    echo get_assets();
 
 You can output only assets from a specified group.
 
@@ -89,6 +104,16 @@ the library will use the global values in the library.
     );
     echo get_styles($group_name, $config);
 
+    // or you can be more specific
+    $config = array(
+        'combine_css'  => TRUE,
+        'minify_css'   => FALSE,
+        'combine_js'   => TRUE,
+        'minify_js'    => TRUE,
+    );
+    echo get_styles($group_name, $config);
+
+
 * **media**: CSS only. eg: 'print', 'screen', 'all and (min-width:500px)'
-* **combine**: should we combine the files in this group
-* **minify**: should we minify the files in this group
+* **combine**: should we combine both asset types in this group
+* **minify**: should we minify both asset types in this group

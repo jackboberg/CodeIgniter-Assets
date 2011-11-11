@@ -40,7 +40,7 @@ class Assets {
      */
     public function __construct($config = array())
 	{
-        //$this->ci = get_instance();
+        $this->ci = get_instance();
 		log_message('debug', 'Assets Library initialized.');
 
         if (count($config) > 0)
@@ -209,6 +209,99 @@ class Assets {
         return array('css'=>$css,'js'=>$js);
     }
 
+    // --------------------------------------------------------------------
+
+    /**
+     * get links to stored styles for this group
+     *
+     * @access  public
+     * @param   string  $group      name of the group
+     * @param   array   $config     optional settings
+     *
+     * @return  string
+     **/
+    public function get_styles($group = 'main', $config = array())
+    {
+        return $this->get_assets($group, $config, 'css');
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+     * get links to stored scripts for this group
+     *
+     * @access  public
+     * @param   string  $group      name of the group
+     * @param   array   $config     optional settings
+     *
+     * @return  string
+     **/
+    public function get_scripts($group = 'main', $config = array())
+    {
+        return $this->get_assets($group, $config, 'js');
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+     * get links to stored assets for this group, of specified type
+     *
+     * @access  public
+     * @param   string  $group      name of the group
+     * @param   array   $config     optional settings
+     * @param   string  $type       asset type
+     *
+     * @return  string
+     **/
+    public function get_assets($group = 'main', $config = array(), $type = 'both')
+    {
+        // setup config options
+        extract($this->get_config_options($config));
+        // $combine_css
+        // $minify_css
+        // $combine_js
+        // $minify_js
+        
+        // get the assets
+        $assets = $this->get_group_assets($group);
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+     * determine minify/combine preferences
+     *
+     * @access  private
+     * @param   array   $config     config preferences
+     *
+     * @return  array
+     **/
+    private function get_config_options($config)
+    {
+        $options = array(
+             'combine_css'  => $this->combine_css,
+             'minify_css'   => $this->minify_css,
+             'combine_js'   => $this->combine_js,
+             'minify_js'    => $this->minify_js,
+        );
+        // override explicit settings
+        foreach ($options as $key => $val)
+        {
+            if (isset($config[$key]))
+            {
+                $options[$key] = (bool) $config[$key];
+            }
+        }
+        // catch simple settings
+        foreach (array('combine', 'minify') as $o)
+        {
+            if (isset($config[$o]))
+            {
+                $options[$o.'_css'] = $options[$o.'_js'] = (bool) $config[$o];
+            }
+        }
+        return $options;
+    }
     // --------------------------------------------------------------------
 
 }
