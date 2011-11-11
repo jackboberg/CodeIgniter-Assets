@@ -25,7 +25,8 @@ class Assets {
     protected $combine_js   = TRUE;
     protected $minify_js    = TRUE;
 
-	private $store = array();
+    private $store = array();
+    private $groups = array();
 
     // --------------------------------------------------------------------
 
@@ -39,7 +40,7 @@ class Assets {
      */
     public function __construct($config = array())
 	{
-        $this->ci = get_instance();
+        //$this->ci = get_instance();
 		log_message('debug', 'Assets Library initialized.');
 
         if (count($config) > 0)
@@ -86,7 +87,7 @@ class Assets {
      *
      * @return void
      **/
-    public function add($assets, $group='main')
+    public function add($assets, $group = NULL)
     {
         // convert strings to array for simplicty
         if ( ! is_array($assets))
@@ -129,9 +130,83 @@ class Assets {
             {
                 continue;
             }
-            // add it!
-            $group[$type][] = $asset;
+            // add it to the store!
+            $group[$type][$hash] = $asset;
         }
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+     * Combine existing groups into new group
+     *
+     * @access  public
+     * @param   string  $group      name of new group
+     * @param   array   $groups     names of groups to combine
+     *
+     * @return void
+     **/
+    public function group($group, $groups)
+    {
+        // create the group if needed
+        if ( ! isset($this->groups[$group]))
+        {
+            $this->groups[$group] = array();
+        }
+        $group =& $this->groups[$group];
+        // add a reference to the existing groups
+        // we combine assets on output
+        foreach ($groups as $g)
+        {
+            // don't duplicate
+            if ( ! in_array($g, $group))
+            {
+                $group[] = $g;
+            }
+        }
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+     * Get all assets stored for this group
+     *
+     * @access  public
+     * @param   string  $group  name of group
+     *
+     * @return  array
+     **/
+    public function get_group_assets($group)
+    {
+        $css = array();
+        $js = array();
+        // first look in the store
+        if (isset($this->store[$group]))
+        {
+            $css = $this->store[$group]['css'];
+            $js = $this->store[$group]['js'];
+        }
+        // is there a meta-group by the same name?
+        if (isset($this->groups[$group]))
+        {
+            // get the assets for each group
+            foreach ($this->groups[$group] as $g)
+            {
+                $assets = $this->get_group_assets($g);
+                foreach (array('css', 'js') as $type)
+                {
+                    foreach ($assets[$type] as $hash => $a)
+                    {
+                        // no duplicates
+                        if ( ! isset(${$type}[$hash]))
+                        {
+                            ${$type}[$hash] = $a;
+                        }
+                    }
+                }
+            }
+        }
+        return array('css'=>$css,'js'=>$js);
     }
 
     // --------------------------------------------------------------------
