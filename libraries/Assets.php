@@ -47,6 +47,7 @@ class Assets {
         {
             $this->initialize($config);
         }
+        $this->ci->load->helper(array('file','url'));
     }
 
     // --------------------------------------------------------------------
@@ -220,7 +221,7 @@ class Assets {
      *
      * @return  string
      **/
-    public function get_styles($group = 'main', $config = array())
+    public function get_styles($group = NULL, $config = array())
     {
         return $this->get_assets($group, $config, 'css');
     }
@@ -236,7 +237,7 @@ class Assets {
      *
      * @return  string
      **/
-    public function get_scripts($group = 'main', $config = array())
+    public function get_scripts($group = NULL, $config = array())
     {
         return $this->get_assets($group, $config, 'js');
     }
@@ -253,17 +254,137 @@ class Assets {
      *
      * @return  string
      **/
-    public function get_assets($group = 'main', $config = array(), $type = 'both')
+    public function get_assets($group = NULL, $config = array(), $type = NULL)
     {
+        if (is_null($group))
+        {
+            $group = 'main';
+        }
+        $output = '';
+        if (is_null($type))
+        {
+            $output .= $this->get_assets($group, $config, 'css');
+            $output .= $this->get_assets($group, $config, 'js');
+            return $output;
+        }
+        // do we have assets of this type?
+        $assets = $this->get_group_assets($group);
+        if (empty($assets[$type]))
+        {
+            return $output;
+        }
         // setup config options
         extract($this->get_config_options($config));
-        // $combine_css
-        // $minify_css
-        // $combine_js
-        // $minify_js
-        
-        // get the assets
-        $assets = $this->get_group_assets($group);
+        // get the output
+        switch ($type)
+        {
+            case 'css':
+                $output .= "\n\t<!-- CSS Assets -->\n\t";
+                // is there a specified media type?
+                $media = isset($config['media'])
+                    ? $config['media']
+                    : 'all'
+                    ;
+                $output .= $this->get_links('css', $assets['css'], $combine_css, $minify_css, $media);
+                break;
+            case 'js':
+                $output .= "\n\t<!-- JS Assets -->\n\t";
+                $output .= $this->get_links('js', $assets['js'], $combine_js, $minify_js);
+                break;
+        }
+        return $output;
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+     * get HTML for assets
+     *
+     * @access  private
+     * @param   string  $type       asset type
+     * @param   array   $assets     assets to process
+     * @param   bool    $combine    toggle combining assets
+     * @param   bool    $minify     toggle minifying assets
+     * @param   string  $media      CSS media attribute
+     *
+     * @return  string
+     **/
+    private function get_links($type, $assets, $combine, $minify, $media = NULL)
+    {
+        if ( ! $combine && ! $minify)
+        {
+            return $this->get_raw_links($type, $assets, $media);
+        }
+        elseif ($combine && ! $minify)
+        {
+            return $this->get_combined_links($type, $assets, $media);
+        }
+        elseif ($minify && ! $combine)
+        {
+            return $this->get_minified_links($type, $assets, $media);
+        }
+        else
+        {
+            return $this->get_combined_minified_links($type, $assets, $media);
+        }
+    }
+
+	// ------------------------------------------------------------------------
+	
+	/**
+	 * get uncombined/unminified links
+	 *
+	 * @access  private
+	 * @param	string	$type       asset type
+	 * @param	array	$assets     array of assets
+     * @param	string	$media      CSS media attribute
+     *
+	 * @return	string
+	 **/
+	private function get_raw_links($type, $assets, $media)
+	{
+		$output = '';
+		foreach ($assets as $hash => $asset)
+		{
+			$output .= $this->tag($type, $asset['path'], FALSE, $media);
+		}
+		return $output;
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+     * undocumented function
+     *
+     * @return  void
+     **/
+    private function get_combined_links()
+    {
+        return FALSE;
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+     * undocumented function
+     *
+     * @return  void
+     **/
+    private function get_minified_links()
+    {
+        return FALSE;
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+     * undocumented function
+     *
+     * @return  void
+     **/
+    private function get_combined_minified_links()
+    {
+        return FALSE;
     }
 
     // --------------------------------------------------------------------
@@ -302,6 +423,56 @@ class Assets {
         }
         return $options;
     }
+
+    // --------------------------------------------------------------------
+
+	/**
+	 * get HTML tag for asset
+	 *
+	 * @access	private
+	 * @param	string	$type   asset type
+	 * @param	string	$path   path to asset
+	 * @param	bool	$cache  toggle for using cache directory
+     * @param	string	$media  CSS media attribute
+     *
+     * @return	string
+	 **/
+	private function tag($type, $path, $cache = FALSE, $media = NULL)
+	{
+        $output = '';
+        // is this a local path?
+        if ( ! filter_var($path, FILTER_VALIDATE_URL))
+        {
+            if ($cache)
+            {
+                $path = $this->cache_dir . $path;
+            }
+            elseif ($type == 'css')
+            {
+                $path = site_url($this->style_dir . $path);
+            }
+            else
+            {
+                $path = site_url($this->script_dir . $path);
+            }
+        }
+		switch($type)
+		{
+			case 'css':
+				$output .= '<link type="text/css" rel="stylesheet" href="'
+					. $path
+					. '" media="' . $media
+					. '" />' . "\r\n";
+				break;
+			case 'js':
+				$output .= '<script type="text/javascript" src="'
+					. $path
+					. '"></script>' . "\r\n";
+				break;
+		}
+		return $output;
+	}	
+
     // --------------------------------------------------------------------
 
 }
