@@ -25,6 +25,9 @@ class Assets {
     protected $combine_js   = TRUE;
     protected $minify_js    = TRUE;
 
+    protected $auto_update  = TRUE;
+    protected $cache        = NULL;
+
     private $store = array();
     private $groups = array();
 
@@ -398,6 +401,7 @@ class Assets {
             {
                 return FALSE;
             }
+            $this->update_cache($assets, $filename);
         }
         return $this->tag($type, $filename, TRUE, $media);
     }
@@ -602,10 +606,62 @@ class Assets {
      * @return  string
      **/
     private function get_cache_filename($type, $assets)
-    {
+    { 
+        if ( ! $this->auto_update)
+        {
+            // have we loaded the store
+            if (is_null($this->cache))
+            {
+                $this->cache = array();
+                if ($filedata = read_file($this->cache_dir . 'store.json'))
+                {
+                    $this->cache = json_decode($filedata, TRUE);
+                }
+            }
+            // look up filename in cache
+            $hash = md5(json_encode($assets));
+            if (isset($this->cache[$hash]))
+            {
+                return $this->cache[$hash];
+            }
+        }
+        // generate hashed filename based on modification date
         $modified = $this->get_last_modified($type, $assets);
         $hash = md5(json_encode($assets) . $modified);
         return  $hash . '.' . $type;
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+     * record this filename in cache for fast lookups
+     *
+     * @access  private
+     * @param   array   $assets     assets being cached
+     * @param   string  $filename   name of cache file
+     *
+     * @return  void
+     **/
+    private function update_cache($assets, $filename)
+    {
+        // should we be ignoring the cache
+        if ($this->auto_update )
+        {
+            return;
+        }
+        // build the store from file
+        $store = array();
+        $filedata = read_file($this->cache_dir . 'store.json');
+        if ($filedata)
+        {
+            $store = json_decode($filedata, TRUE);
+        }
+        // create/update the record for these assets
+        $hash = md5(json_encode($assets));
+        $store[$hash] = $filename;
+        // write it back to file
+        $filedata = json_encode($store);
+        write_file($this->cache_dir . 'store.json', $filedata); 
     }
 
     // --------------------------------------------------------------------

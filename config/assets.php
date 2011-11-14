@@ -58,6 +58,18 @@ $config['combine_js'] = TRUE;
  **/
 $config['minify_js'] = TRUE;
 
+// --------------------------------------------------------------------
+
+/**
+ * should we check file modification dates when trying to load from cache
+ *
+ * this should be set to FALSE when in production, it will enable a 
+ * store to be built for fast file lookups
+ *
+ * @var bool
+ **/
+$config['auto_update'] = FALSE;
+
 
 /* End of file assets.php */
 /* Location: ./config/assets.php */
