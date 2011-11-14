@@ -366,7 +366,7 @@ class Assets {
     private function get_combined_link($type, $assets, $media)
     {
         // check for cached file
-        $filename = $this->get_cache_filename($type, $assets, 'combine');
+        $filename = $this->get_cache_filename($type, $assets);
         if ( ! is_file(APPPATH . $this->cache_dir . $filename))
         {
             // build filedata
@@ -469,73 +469,28 @@ class Assets {
      **/
     private function get_combined_minified_link($type, $assets, $media)
     {
+        // build array of minified file paths
+        $min_assets = array();
+        foreach ($assets as $hash => $a)
+        {
+            // is these a pre-minified version available
+            if (isset($a['min']))
+            {
+                $min_assets[$hash]['path'] = $a['min'];
+            }
+            else
+            {
+                $min_assets[$hash]['path'] = $this->get_minified_path($type, $a['path']);
+            }
+        }
         // check for cached file
-        $filename = $this->get_cache_filename($type, $assets, 'minify');
+        $filename = $this->get_cache_filename($type, $min_assets);
         if ( ! is_file(APPPATH . $this->cache_dir . $filename))
         {
-            // minify each asset
-
-            // build filedata
-            $filedata = '';
-            foreach ($assets as $a)
-            {
-                // is these a pre-minified version available
-                if ( ! isset($a['min']))
-                {
-                    // have we minified this file in the past
-                    $min_path = $this->get_minified_path($type, $a['path']);
-                    if ($type == 'css')
-                    {
-                        $dir = $this->style_dir;
-                    }
-                    else
-                    {
-                        $dir = $this->script_dir;
-                    }
-                    if ( ! is_file($dir . $min_path))
-                    {
-                        // minify the file and write to path
-                        $this->minify($type, $a['path'], $dir . $min_path); 
-                    }
-                    else
-                    {
-                        // is the original file newer
-                        $min_info = get_file_info($dir . $min_path);
-                        $orig_info = get_file_info($dir . $a['path']);
-                        if ($orig_info['date'] > $min_info['date'])
-                        {
-                            // re-minify the file and write to path
-                            $this->minify($type, $a['path'], $dir . $min_path); 
-                        }
-                    }
-                    $a['min'] = $min_path;
-                }
-                // read content of minified files
-                if (filter_var($a['min'], FILTER_VALIDATE_URL))
-                {
-                    // use modified read_file for remote files
-                    $filedata .= $this->read_file($a['min']);
-                }
-                else
-                {
-                    // for local files use the system read_file
-                    switch ($type)
-                    {
-                        case 'css':
-                            $path = $this->style_dir . $a['min'];
-                            break;
-                        default:
-                            $path = $this->script_dir . $a['min'];
-                            break;
-                    }
-                    $filedata .= read_file($path);
-                }
-            }
-            // write to cache
-            if ( ! write_file($this->cache_dir . $filename, $filedata))
-            {
-                return FALSE;
-            }
+            // call method to generate files
+            $this->get_minified_links($type, $assets, $media);
+            // combine new assets array
+            return $this->get_combined_link($type, $min_assets, $media);
         }
         return $this->tag($type, $filename, TRUE, $media);
     }
@@ -643,14 +598,13 @@ class Assets {
 	 * @access  private
 	 * @param	string	$type       asset type
      * @param	array	$assets     array of assets
-     * @param   string  $process    processing type
      *
      * @return  string
      **/
-    private function get_cache_filename($type, $assets, $process)
+    private function get_cache_filename($type, $assets)
     {
         $modified = $this->get_last_modified($type, $assets);
-        $hash = md5(json_encode($assets) . $modified . $process);
+        $hash = md5(json_encode($assets) . $modified);
         return  $hash . '.' . $type;
     }
 
