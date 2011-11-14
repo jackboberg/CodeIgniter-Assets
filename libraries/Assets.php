@@ -317,7 +317,7 @@ class Assets {
         }
         elseif ($combine && ! $minify)
         {
-            return $this->get_combined_links($type, $assets, $media);
+            return $this->get_combined_link($type, $assets, $media);
         }
         elseif ($minify && ! $combine)
         {
@@ -325,7 +325,7 @@ class Assets {
         }
         else
         {
-            return $this->get_combined_minified_links($type, $assets, $media);
+            return $this->get_combined_minified_link($type, $assets, $media);
         }
     }
 
@@ -354,13 +354,105 @@ class Assets {
     // --------------------------------------------------------------------
 
     /**
-     * undocumented function
+     * get combined link
      *
-     * @return  void
+	 * @access  private
+	 * @param	string	$type       asset type
+	 * @param	array	$assets     array of assets
+     * @param	string	$media      CSS media attribute
+     *
+	 * @return	string
      **/
-    private function get_combined_links()
+    private function get_combined_link($type, $assets, $media)
     {
-        return FALSE;
+        // check for cached file
+        $filename = $this->get_cache_filename($type, $assets, 'combine');
+        if ( ! is_file(APPPATH . $this->cache_dir . $filename))
+        {
+            // build filedata
+            $filedata = '';
+            foreach ($assets as $a)
+            {
+                if (filter_var($a['path'], FILTER_VALIDATE_URL))
+                {
+                    // use modified read_file for remote files
+                    $filedata .= $this->read_file($a['path']);
+                }
+                else
+                {
+                    // for local files use the system read_file
+                    switch ($type)
+                    {
+                        case 'css':
+                            $path = $this->style_dir . $a['path'];
+                            break;
+                        default:
+                            $path = $this->script_dir . $a['path'];
+                            break;
+                    }
+                    $filedata .= read_file($path);
+                }
+            }
+            // write to cache
+            if ( ! write_file($this->cache_dir . $filename, $filedata))
+            {
+                return FALSE;
+            }
+        }
+        return $this->tag($type, $filename, TRUE, $media);
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+     * get minified links
+     *
+	 * @access  private
+	 * @param	string	$type       asset type
+	 * @param	array	$assets     array of assets
+     * @param	string	$media      CSS media attribute
+     *
+	 * @return	string
+     **/
+    private function get_minified_links($type, $assets, $media)
+    {
+        $output = '';
+        foreach ($assets as $a)
+        {
+            // is these a pre-minified version available
+            if ( ! isset($a['min']))
+            {
+                // have we minified this file in the past
+                $min_path = $this->get_minified_path($type, $a['path']);
+                if ($type == 'css')
+                {
+                    $dir = $this->style_dir;
+                }
+                else
+                {
+                    $dir = $this->script_dir;
+                }
+                if ( ! is_file($dir . $min_path))
+                {
+                    // minify the file and write to path
+                    $this->minify($type, $a['path'], $dir . $min_path); 
+                }
+                else
+                {
+                    // is the original file newer
+                    $min_info = get_file_info($dir . $min_path);
+                    $orig_info = get_file_info($dir . $a['path']);
+                    if ($orig_info['date'] > $min_info['date'])
+                    {
+                        // re-minify the file and write to path
+                        $this->minify($type, $a['path'], $dir . $min_path); 
+                    }
+                }
+                $a['min'] = $min_path;
+            }
+            $output .= $this->tag($type, $a['min'], FALSE, $media);
+        }
+        return $output;
     }
 
     // --------------------------------------------------------------------
@@ -370,7 +462,7 @@ class Assets {
      *
      * @return  void
      **/
-    private function get_minified_links()
+    private function get_combined_minified_link()
     {
         return FALSE;
     }
@@ -378,13 +470,152 @@ class Assets {
     // --------------------------------------------------------------------
 
     /**
-     * undocumented function
+     * get path of locally stored minified version
      *
-     * @return  void
+     * @access  private
+	 * @param	string	$type       asset type
+     * @param   string  $path       path to original
+     *
+     * @return  string
      **/
-    private function get_combined_minified_links()
+    private function get_minified_path($type, $path)
+    {   
+        if (filter_var($path, FILTER_VALIDATE_URL))
+        {
+            // remote path, just get the filename
+            $filename = substr(strrchr($path, '/'), 1);
+            return substr($filename, 0, strrpos($filename, '.')) . '.min.' . $type; 
+        }
+        else
+        {
+            // local path, include original file location
+            $dir = '';
+            if ($pos = strrpos($path, DIRECTORY_SEPARATOR))
+            {
+                // file is in sub-folder
+                $dir = substr($path, 0, $pos + 1);
+                $filename = strrchr($path, DIRECTORY_SEPARATOR);
+            }
+            else
+            {
+                $filename = $path;
+            }
+            return substr($filename, 0, strrpos($filename, '.')) . '.min.' . $type; 
+        }
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+	 * minify asset
+	 *
+	 * @access	private
+	 * @param	string  $type       asset type
+     * @param	string	$path       path to original
+     * @param   string  $min_path   path to save minifed version
+     *
+     * @return  bool
+     **/
+	public function minify($type, $path, $min_path)
     {
-        return FALSE;
+        // read file into variable
+        if (filter_var($path, FILTER_VALIDATE_URL))
+        {
+            // use modified read_file for remote files
+            $contents = $this->read_file($path);
+        }
+        else
+        {
+            // for local files use the system read_file
+            switch ($type)
+            {
+                case 'css':
+                    $path = $this->style_dir . $path;
+                    break;
+                default:
+                    $path = $this->script_dir . $path;
+                    break;
+            }
+            $contents = read_file($path);
+        }
+        // ensure we have some content
+        if ( ! $contents)
+        {
+            return FALSE;
+        }
+        // minimize the contents
+        $output = '';
+		switch($type)
+		{
+            case 'js':
+                $this->ci->load->library('jsmin');
+                $output .= $this->ci->jsmin->minify($contents);
+				break;
+			case 'css':
+                $this->ci->load->library('cssmin');
+                $config['relativePath'] = site_url($this->style_dir) .'/';
+                $this->ci->cssmin->config($config);
+                $output .= $this->ci->cssmin->minify($contents);
+				break;
+        }
+        // write the minimized content to file
+        return write_file($min_path, $output);
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+     * get the hashed filename for these assets
+     *
+	 * @access  private
+	 * @param	string	$type       asset type
+     * @param	array	$assets     array of assets
+     * @param   string  $process    processing type
+     *
+     * @return  string
+     **/
+    private function get_cache_filename($type, $assets, $process)
+    {
+        $modified = $this->get_last_modified($type, $assets);
+        $hash = md5(json_encode($assets) . $modified . $process);
+        return  $hash . '.' . $type;
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+     * get timestamp of most recently modified file
+     *
+     * @access  private
+     * @param   array   $assets     files to examine
+     *
+     * @return  string
+     **/
+    private function get_last_modified($type, $assets)
+    {
+        $timestamp = 0;
+        foreach ($assets as $a)
+        {
+            // only check local files
+            if ( ! filter_var($a['path'], FILTER_VALIDATE_URL))
+            {
+                switch ($type)
+                {
+                    case 'css':
+                        $path = $this->style_dir . $a['path'];
+                        break;
+                    default:
+                        $path = $this->script_dir . $a['path'];
+                        break;
+                }
+                $data = get_file_info($path);
+                if ($data['date'] > $timestamp)
+                {
+                    $timestamp = $data['date'];
+                }
+            }
+        }
+        return $timestamp;
     }
 
     // --------------------------------------------------------------------
@@ -445,16 +676,17 @@ class Assets {
         {
             if ($cache)
             {
-                $path = $this->cache_dir . $path;
+                $dir = $this->cache_dir;
             }
             elseif ($type == 'css')
             {
-                $path = site_url($this->style_dir . $path);
+                $dir = $this->style_dir;
             }
             else
             {
-                $path = site_url($this->script_dir . $path);
+                $dir = $this->script_dir;
             }
+            $path = site_url($dir . $path);
         }
 		switch($type)
 		{
@@ -472,6 +704,45 @@ class Assets {
 		}
 		return $output;
 	}	
+
+    // --------------------------------------------------------------------
+
+    /**
+     * Opens the file specfied in the path and returns it as a string
+     *
+     * this is a duplicate of the file_helper method, without a check
+     * for file_exists()
+     *
+     * @access	private
+     * @param	string  $file   path to file
+     *
+     * @return	string
+     **/
+    public function read_file($file)
+    {
+		if (function_exists('file_get_contents'))
+		{
+			return file_get_contents($file);
+        }
+
+		if ( ! $fp = @fopen($file, FOPEN_READ))
+		{
+			return FALSE;
+		}
+
+		flock($fp, LOCK_SH);
+
+		$data = '';
+		if (filesize($file) > 0)
+		{
+			$data =& fread($fp, filesize($file));
+		}
+
+		flock($fp, LOCK_UN);
+		fclose($fp);
+
+		return $data;
+	}
 
     // --------------------------------------------------------------------
 
