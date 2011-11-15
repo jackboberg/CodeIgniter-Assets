@@ -68,7 +68,7 @@ $config['minify_js'] = TRUE;
  *
  * @var bool
  **/
-$config['auto_update'] = FALSE;
+$config['auto_update'] = TRUE;
 
 
 /* End of file assets.php */
