@@ -7,7 +7,7 @@
  * @category    Asset Management
  * @author      Jack Boberg
  * @link        https://github.com/jackboberg/CodeIgniter-Assets
- * @license		http://creativecommons.org/licenses/BSD/
+ * @license        http://creativecommons.org/licenses/BSD/
  */
 
 
@@ -42,9 +42,9 @@ class Assets {
      * @return  void
      */
     public function __construct($config = array())
-	{
+    {
         $this->ci = get_instance();
-		log_message('debug', 'Assets Library initialized.');
+        log_message('debug', 'Assets Library initialized.');
 
         if (count($config) > 0)
         {
@@ -332,26 +332,26 @@ class Assets {
         }
     }
 
-	// ------------------------------------------------------------------------
-	
-	/**
-	 * get uncombined/unminified links
-	 *
-	 * @access  private
-	 * @param	string	$type       asset type
-	 * @param	array	$assets     array of assets
-     * @param	string	$media      CSS media attribute
+    // ------------------------------------------------------------------------
+
+    /**
+     * get uncombined/unminified links
      *
-	 * @return	string
-	 **/
-	private function get_raw_links($type, $assets, $media)
-	{
-		$output = '';
-		foreach ($assets as $hash => $asset)
-		{
-			$output .= $this->tag($type, $asset['path'], FALSE, $media);
-		}
-		return $output;
+     * @access  private
+     * @param    string    $type       asset type
+     * @param    array    $assets     array of assets
+     * @param    string    $media      CSS media attribute
+     *
+     * @return    string
+     **/
+    private function get_raw_links($type, $assets, $media)
+    {
+        $output = '';
+        foreach ($assets as $hash => $asset)
+        {
+            $output .= $this->tag($type, $asset['path'], FALSE, $media);
+        }
+        return $output;
     }
 
     // --------------------------------------------------------------------
@@ -359,12 +359,12 @@ class Assets {
     /**
      * get combined link
      *
-	 * @access  private
-	 * @param	string	$type       asset type
-	 * @param	array	$assets     array of assets
-     * @param	string	$media      CSS media attribute
+     * @access  private
+     * @param    string    $type       asset type
+     * @param    array    $assets     array of assets
+     * @param    string    $media      CSS media attribute
      *
-	 * @return	string
+     * @return    string
      **/
     private function get_combined_link($type, $assets, $media)
     {
@@ -411,12 +411,12 @@ class Assets {
     /**
      * get minified links
      *
-	 * @access  private
-	 * @param	string	$type       asset type
-	 * @param	array	$assets     array of assets
-     * @param	string	$media      CSS media attribute
+     * @access  private
+     * @param    string    $type       asset type
+     * @param    array    $assets     array of assets
+     * @param    string    $media      CSS media attribute
      *
-	 * @return	string
+     * @return    string
      **/
     private function get_minified_links($type, $assets, $media)
     {
@@ -464,12 +464,12 @@ class Assets {
     /**
      * get minified and combined link
      *
-	 * @access  private
-	 * @param	string	$type       asset type
-	 * @param	array	$assets     array of assets
-     * @param	string	$media      CSS media attribute
+     * @access  private
+     * @param    string    $type       asset type
+     * @param    array    $assets     array of assets
+     * @param    string    $media      CSS media attribute
      *
-	 * @return	string
+     * @return    string
      **/
     private function get_combined_minified_link($type, $assets, $media)
     {
@@ -505,7 +505,7 @@ class Assets {
      * get path of locally stored minified version
      *
      * @access  private
-	 * @param	string	$type       asset type
+     * @param    string    $type       asset type
      * @param   string  $path       path to original
      *
      * @return  string
@@ -539,16 +539,16 @@ class Assets {
     // --------------------------------------------------------------------
 
     /**
-	 * minify asset
-	 *
-	 * @access	private
-	 * @param	string  $type       asset type
-     * @param	string	$path       path to original
+     * minify asset
+     *
+     * @access    private
+     * @param    string  $type       asset type
+     * @param    string    $path       path to original
      * @param   string  $min_path   path to save minifed version
      *
      * @return  bool
      **/
-	public function minify($type, $path, $min_path)
+    public function minify($type, $path, $min_path)
     {
         // read file into variable
         if (filter_var($path, FILTER_VALIDATE_URL))
@@ -577,18 +577,18 @@ class Assets {
         }
         // minimize the contents
         $output = '';
-		switch($type)
-		{
+        switch($type)
+        {
             case 'js':
                 $this->ci->load->library('jsmin');
                 $output .= $this->ci->jsmin->minify($contents);
-				break;
-			case 'css':
+                break;
+            case 'css':
                 $this->ci->load->library('cssmin');
                 $config['relativePath'] = site_url($this->style_dir) .'/';
                 $this->ci->cssmin->config($config);
                 $output .= $this->ci->cssmin->minify($contents);
-				break;
+                break;
         }
         // write the minimized content to file
         return write_file($min_path, $output);
@@ -599,9 +599,9 @@ class Assets {
     /**
      * get the hashed filename for these assets
      *
-	 * @access  private
-	 * @param	string	$type       asset type
-     * @param	array	$assets     array of assets
+     * @access  private
+     * @param    string    $type       asset type
+     * @param    array    $assets     array of assets
      *
      * @return  string
      **/
@@ -739,19 +739,19 @@ class Assets {
 
     // --------------------------------------------------------------------
 
-	/**
-	 * get HTML tag for asset
-	 *
-	 * @access	private
-	 * @param	string	$type   asset type
-	 * @param	string	$path   path to asset
-	 * @param	bool	$cache  toggle for using cache directory
-     * @param	string	$media  CSS media attribute
+    /**
+     * get HTML tag for asset
      *
-     * @return	string
-	 **/
-	private function tag($type, $path, $cache = FALSE, $media = NULL)
-	{
+     * @access    private
+     * @param    string    $type   asset type
+     * @param    string    $path   path to asset
+     * @param    bool    $cache  toggle for using cache directory
+     * @param    string    $media  CSS media attribute
+     *
+     * @return    string
+     **/
+    private function tag($type, $path, $cache = FALSE, $media = NULL)
+    {
         $output = '';
         // is this a local path?
         if ( ! filter_var($path, FILTER_VALIDATE_URL))
@@ -770,22 +770,22 @@ class Assets {
             }
             $path = site_url($dir . $path);
         }
-		switch($type)
-		{
-			case 'css':
-				$output .= '<link type="text/css" rel="stylesheet" href="'
-					. $path
-					. '" media="' . $media
-					. '" />' . "\r\n";
-				break;
-			case 'js':
-				$output .= '<script type="text/javascript" src="'
-					. $path
-					. '"></script>' . "\r\n";
-				break;
-		}
-		return $output;
-	}	
+        switch($type)
+        {
+            case 'css':
+                $output .= '<link type="text/css" rel="stylesheet" href="'
+                    . $path
+                    . '" media="' . $media
+                    . '" />' . "\r\n";
+                break;
+            case 'js':
+                $output .= '<script type="text/javascript" src="'
+                    . $path
+                    . '"></script>' . "\r\n";
+                break;
+        }
+        return $output;
+    }    
 
     // --------------------------------------------------------------------
 
@@ -795,36 +795,36 @@ class Assets {
      * this is a duplicate of the file_helper method, without a check
      * for file_exists()
      *
-     * @access	private
-     * @param	string  $file   path to file
+     * @access    private
+     * @param    string  $file   path to file
      *
-     * @return	string
+     * @return    string
      **/
     public function read_file($file)
     {
-		if (function_exists('file_get_contents'))
-		{
-			return file_get_contents($file);
+        if (function_exists('file_get_contents'))
+        {
+            return file_get_contents($file);
         }
 
-		if ( ! $fp = @fopen($file, FOPEN_READ))
-		{
-			return FALSE;
-		}
+        if ( ! $fp = @fopen($file, FOPEN_READ))
+        {
+            return FALSE;
+        }
 
-		flock($fp, LOCK_SH);
+        flock($fp, LOCK_SH);
 
-		$data = '';
-		if (filesize($file) > 0)
-		{
-			$data =& fread($fp, filesize($file));
-		}
+        $data = '';
+        if (filesize($file) > 0)
+        {
+            $data =& fread($fp, filesize($file));
+        }
 
-		flock($fp, LOCK_UN);
-		fclose($fp);
+        flock($fp, LOCK_UN);
+        fclose($fp);
 
-		return $data;
-	}
+        return $data;
+    }
 
     // --------------------------------------------------------------------
 
