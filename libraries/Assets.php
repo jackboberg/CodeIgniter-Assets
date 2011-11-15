@@ -691,7 +691,10 @@ class Assets {
                         $path = $this->script_dir . $a['path'];
                         break;
                 }
-                $timestamp = max($timestamp, filemtime($path));
+                if (is_file($path))
+                {
+                    $timestamp = max($timestamp, filemtime($path));
+                }
             }
         }
         return $timestamp;
