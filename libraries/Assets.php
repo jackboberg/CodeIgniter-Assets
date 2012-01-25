@@ -376,8 +376,7 @@ class Assets {
             $filedata = '';
             foreach ($assets as $a)
             {
-                $file_contents = find_file($a,$type);
-                $filedata .= $file_contents['contents'];
+                $filedata .= find_file($a,$type);
             }
             // write to cache
             if ( ! write_file($this->cache_dir . $filename, $filedata))
