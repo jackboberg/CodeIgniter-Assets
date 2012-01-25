@@ -70,6 +70,14 @@ $config['minify_js'] = TRUE;
  **/
 $config['auto_update'] = TRUE;
 
+// --------------------------------------------------------------------
+
+/**
+ * should the names of the cache files be static
+ *
+ * @var bool
+ */
+$config['static_cache'] = FALSE;
 
 /* End of file assets.php */
 /* Location: ./config/assets.php */

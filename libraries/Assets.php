@@ -263,6 +263,10 @@ class Assets {
         {
             $group = 'main';
         }
+        if ( ! empty($this->current_group)) 
+        {
+            $this->current_group = $group;
+        }
         $output = '';
         if (is_null($type))
         {
@@ -383,6 +387,7 @@ class Assets {
             {
                 return FALSE;
             }
+            $this->current_group = NULL;
             $this->update_cache($assets, $filename);
         }
         return $this->tag($type, $filename, TRUE, $media);
@@ -576,15 +581,22 @@ class Assets {
                 }
             }
             // look up filename in cache
-            $hash = md5(json_encode($assets));
-            if (isset($this->cache[$hash]))
+            if ($this->static_cache) 
             {
-                return $this->cache[$hash];
+                $hash = $this->current_group;
+            }
+            else
+            {
+                $hash = md5(json_encode($assets));
+                if (isset($this->cache[$hash]))
+                {
+                    return $this->cache[$hash];
+                }
+                $modified = $this->get_last_modified($type, $assets);
+                $hash = md5(json_encode($assets) . $modified);
             }
         }
         // generate hashed filename based on modification date
-        $modified = $this->get_last_modified($type, $assets);
-        $hash = md5(json_encode($assets) . $modified);
         return  $hash . '.' . $type;
     }
 
@@ -714,6 +726,10 @@ class Assets {
                 $dir = $this->get_path($path,$type);
             }
             $path = site_url($dir . $path);
+            if ($this->static_cache) 
+            {   
+                $path .= '?cache=' . filemtime($path);
+            }
         }
         switch($type)
         {
