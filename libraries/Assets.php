@@ -588,6 +588,10 @@ class Assets {
         if ($this->static_cache) 
         {
             $hash = $this->current_group;
+            if ($this->{'minify_'.$type}) 
+            {
+                $hash .= '.min';
+            }
         }
         else
         {
