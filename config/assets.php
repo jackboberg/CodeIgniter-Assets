@@ -17,7 +17,7 @@ $config['script_dirs'] = array('assets/scripts/');
  *
  * @var string
  **/
-$config['style_dirs'] = array('assets/styles/');
+$config['style_dirs'] = array('assets/styles/','assets/styles2/');
 
 /**
  * Path to the (writeable) cache directory

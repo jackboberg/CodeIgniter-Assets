@@ -376,7 +376,7 @@ class Assets {
             $filedata = '';
             foreach ($assets as $a)
             {
-                $filedata .= find_file($a,$type);
+                $filedata .= $this->get_file($a['path'],$type);
             }
             // write to cache
             if ( ! write_file($this->cache_dir . $filename, $filedata))
@@ -410,7 +410,7 @@ class Assets {
             {
                 // have we minified this file in the past
                 $min_path = $this->get_minified_path($type, $a['path']);
-                $dir = $this->get_path($a,$type);
+                $dir = $this->get_path($a['path'],$type);
                 if ( ! is_file($dir . $min_path))
                 {
                     // minify the file and write to path
@@ -525,9 +525,9 @@ class Assets {
      **/
     public function minify($type, $path, $min_path)
     {
-        $contents = find_file($path,$type);
+        $contents = $this->get_file($path,$type);
        // ensure we have some content
-        if ( ! $file_contents)
+        if ( ! $contents)
         {
             return FALSE;
         }
@@ -792,7 +792,7 @@ class Assets {
         }
         else
         {
-            if( ! $path = $this->get_path($file))
+            if( ! $path = $this->get_path($file,$ext))
             {
                 return FALSE;
             }
