@@ -28,8 +28,11 @@ class Assets {
     protected $auto_update  = TRUE;
     protected $cache        = NULL;
 
+    protected $static_cache = FALSE;
+
     private $store = array();
     private $groups = array();
+    private $current_group = NULL;
 
     // --------------------------------------------------------------------
 
@@ -263,7 +266,7 @@ class Assets {
         {
             $group = 'main';
         }
-        if ( ! empty($this->current_group)) 
+        if (empty($this->current_group)) 
         {
             $this->current_group = $group;
         }
@@ -299,6 +302,7 @@ class Assets {
                 $output .= $this->get_links('js', $assets['js'], $combine_js, $minify_js);
                 break;
         }
+        $this->current_group = NULL;
         return $output;
     }
 
@@ -374,7 +378,7 @@ class Assets {
     {
         // check for cached file
         $filename = $this->get_cache_filename($type, $assets);
-        if ( ! is_file(APPPATH . $this->cache_dir . $filename))
+        if ( ! is_file(APPPATH . '../' . $this->cache_dir . $filename) || ($this->static_cache && $this->get_last_modified($type,$assets) > filemtime($this->cache_dir . $filename)))
         {
             // build filedata
             $filedata = '';
@@ -387,7 +391,6 @@ class Assets {
             {
                 return FALSE;
             }
-            $this->current_group = NULL;
             $this->update_cache($assets, $filename);
         }
         return $this->tag($type, $filename, TRUE, $media);
@@ -469,7 +472,7 @@ class Assets {
         }
         // check for cached file
         $filename = $this->get_cache_filename($type, $min_assets);
-        if ( ! is_file(APPPATH . $this->cache_dir . $filename))
+        if ( ! is_file(APPPATH . '../' . $this->cache_dir . $filename) || ($this->static_cache && $this->get_last_modified($type,$assets) > filemtime($this->cache_dir . $filename)))
         {
             // call method to generate files
             $this->get_minified_links($type, $assets, $media);
@@ -580,21 +583,21 @@ class Assets {
                     $this->cache = json_decode($filedata, TRUE);
                 }
             }
-            // look up filename in cache
-            if ($this->static_cache) 
+        }
+        // look up filename in cache
+        if ($this->static_cache) 
+        {
+            $hash = $this->current_group;
+        }
+        else
+        {
+            $hash = md5(json_encode($assets));
+            if (isset($this->cache[$hash]))
             {
-                $hash = $this->current_group;
+                return $this->cache[$hash];
             }
-            else
-            {
-                $hash = md5(json_encode($assets));
-                if (isset($this->cache[$hash]))
-                {
-                    return $this->cache[$hash];
-                }
-                $modified = $this->get_last_modified($type, $assets);
-                $hash = md5(json_encode($assets) . $modified);
-            }
+            $modified = $this->get_last_modified($type, $assets);
+            $hash = md5(json_encode($assets) . $modified);
         }
         // generate hashed filename based on modification date
         return  $hash . '.' . $type;
@@ -651,7 +654,7 @@ class Assets {
             // only check local files
             if ( ! filter_var($a['path'], FILTER_VALIDATE_URL))
             {
-                $path = $this->get_path($a,$type);
+                $path = $this->get_path($a['path'],$type);
                 if (is_file($path . $a['path']))
                 {
                     $timestamp = max($timestamp, filemtime($path));
@@ -715,6 +718,7 @@ class Assets {
     {
         $output = '';
         // is this a local path?
+        $url = $path;
         if ( ! filter_var($path, FILTER_VALIDATE_URL))
         {
             if ($cache)
@@ -725,23 +729,23 @@ class Assets {
             {
                 $dir = $this->get_path($path,$type);
             }
-            $path = site_url($dir . $path);
+            $url = site_url($dir . $path);
             if ($this->static_cache) 
             {   
-                $path .= '?cache=' . filemtime($path);
+                $url .= '?cache=' . filemtime($dir . $path);
             }
         }
         switch($type)
         {
             case 'css':
                 $output .= '<link type="text/css" rel="stylesheet" href="'
-                    . $path
+                    . $url
                     . '" media="' . $media
                     . '" />' . "\r\n";
                 break;
             case 'js':
                 $output .= '<script type="text/javascript" src="'
-                    . $path
+                    . $url
                     . '"></script>' . "\r\n";
                 break;
         }
