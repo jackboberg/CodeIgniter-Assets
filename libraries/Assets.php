@@ -15,8 +15,8 @@ class Assets {
 
     private $ci;
 
-    protected $script_dir   = 'assets/scripts/';
-    protected $style_dir    = 'assets/styles/';
+    protected $script_dirs   = array('assets/scripts/');
+    protected $style_dirs    = array('assets/styles/');
     protected $cache_dir    = 'assets/cache/';
 
     protected $combine_css  = TRUE;
@@ -376,25 +376,8 @@ class Assets {
             $filedata = '';
             foreach ($assets as $a)
             {
-                if (filter_var($a['path'], FILTER_VALIDATE_URL))
-                {
-                    // use modified read_file for remote files
-                    $filedata .= $this->read_file($a['path']);
-                }
-                else
-                {
-                    // for local files use the system read_file
-                    switch ($type)
-                    {
-                        case 'css':
-                            $path = $this->style_dir . $a['path'];
-                            break;
-                        default:
-                            $path = $this->script_dir . $a['path'];
-                            break;
-                    }
-                    $filedata .= read_file($path);
-                }
+                $file_contents = find_file($a,$type);
+                $filedata .= $file_contents['contents'];
             }
             // write to cache
             if ( ! write_file($this->cache_dir . $filename, $filedata))
@@ -428,14 +411,7 @@ class Assets {
             {
                 // have we minified this file in the past
                 $min_path = $this->get_minified_path($type, $a['path']);
-                if ($type == 'css')
-                {
-                    $dir = $this->style_dir;
-                }
-                else
-                {
-                    $dir = $this->script_dir;
-                }
+                $dir = $this->get_path($a,$type);
                 if ( ! is_file($dir . $min_path))
                 {
                     // minify the file and write to path
@@ -550,31 +526,13 @@ class Assets {
      **/
     public function minify($type, $path, $min_path)
     {
-        // read file into variable
-        if (filter_var($path, FILTER_VALIDATE_URL))
-        {
-            // use modified read_file for remote files
-            $contents = $this->read_file($path);
-        }
-        else
-        {
-            // for local files use the system read_file
-            switch ($type)
-            {
-                case 'css':
-                    $path = $this->style_dir . $path;
-                    break;
-                default:
-                    $path = $this->script_dir . $path;
-                    break;
-            }
-            $contents = read_file($path);
-        }
-        // ensure we have some content
-        if ( ! $contents)
+        $contents = find_file($path,$type);
+       // ensure we have some content
+        if ( ! $file_contents)
         {
             return FALSE;
         }
+        $dir = $this->get_path($path,$type);
         // minimize the contents
         $output = '';
         switch($type)
@@ -585,7 +543,7 @@ class Assets {
                 break;
             case 'css':
                 $this->ci->load->library('cssmin');
-                $config['relativePath'] = site_url($this->style_dir) .'/';
+                $config['relativePath'] = site_url($dir) .'/';
                 $this->ci->cssmin->config($config);
                 $output .= $this->ci->cssmin->minify($contents);
                 break;
@@ -682,16 +640,8 @@ class Assets {
             // only check local files
             if ( ! filter_var($a['path'], FILTER_VALIDATE_URL))
             {
-                switch ($type)
-                {
-                    case 'css':
-                        $path = $this->style_dir . $a['path'];
-                        break;
-                    default:
-                        $path = $this->script_dir . $a['path'];
-                        break;
-                }
-                if (is_file($path))
+                $path = $this->get_path($a,$type);
+                if (is_file($path . $a['path']))
                 {
                     $timestamp = max($timestamp, filemtime($path));
                 }
@@ -760,13 +710,9 @@ class Assets {
             {
                 $dir = $this->cache_dir;
             }
-            elseif ($type == 'css')
-            {
-                $dir = $this->style_dir;
-            }
             else
             {
-                $dir = $this->script_dir;
+                $dir = $this->get_path($path,$type);
             }
             $path = site_url($dir . $path);
         }
@@ -824,6 +770,68 @@ class Assets {
         fclose($fp);
 
         return $data;
+    }
+    
+    // --------------------------------------------------------------------
+
+    /**
+     * find and return file from correct directory
+     *
+     * @param   string  $file  filename
+     * @param   string  $ext  file extension
+     * @access  public 
+     * 
+     * @return  string
+     **/
+    public function get_file($file,$ext)
+    {
+        // read file into variable
+        if (filter_var($file, FILTER_VALIDATE_URL))
+        {
+            // use modified read_file for remote files
+            $result = $this->read_file($file);
+        }
+        else
+        {
+            if( ! $path = $this->get_path($file))
+            {
+                return FALSE;
+            }
+            $result = $this->read_file($path . '/' . $file); 
+        }
+        return $result;
+    }
+    
+    // --------------------------------------------------------------------
+
+    /**
+     * get file path of asset
+     *
+     * @param   string  filename to search for
+     * @access  public 
+     * 
+     * @return string  path to file
+     **/
+    public function get_path($filename,$ext)
+    {
+        // for local files use the system read_file
+        switch ($ext)
+        {
+            case 'css':
+                $paths = $this->style_dirs;
+                break;
+            default:
+                $paths = $this->script_dirs;
+                break;
+        }
+        foreach ($paths as $path)
+        {
+            if (is_file($path . '/' . $filename)) 
+            {
+                return $path;
+            }
+        }
+        return FALSE;
     }
 
     // --------------------------------------------------------------------

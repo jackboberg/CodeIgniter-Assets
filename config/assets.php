@@ -10,14 +10,14 @@
  *
  * @var string
  **/
-$config['script_dir'] = 'assets/scripts/';
+$config['script_dirs'] = array('assets/scripts/');
 
 /**
  * Path to the style directory
  *
  * @var string
  **/
-$config['style_dir'] = 'assets/styles/';
+$config['style_dirs'] = array('assets/styles/');
 
 /**
  * Path to the (writeable) cache directory
