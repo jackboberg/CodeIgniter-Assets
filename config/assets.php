@@ -10,14 +10,14 @@
  *
  * @var string
  **/
-$config['script_dir'] = 'assets/scripts/';
+$config['script_dirs'] = array('assets/scripts/');
 
 /**
  * Path to the style directory
  *
  * @var string
  **/
-$config['style_dir'] = 'assets/styles/';
+$config['style_dirs'] = array('assets/styles/');
 
 /**
  * Path to the (writeable) cache directory
@@ -70,6 +70,14 @@ $config['minify_js'] = TRUE;
  **/
 $config['auto_update'] = TRUE;
 
+// --------------------------------------------------------------------
+
+/**
+ * should the names of the cache files be static
+ *
+ * @var bool
+ */
+$config['static_cache'] = FALSE;
 
 /* End of file assets.php */
 /* Location: ./config/assets.php */
