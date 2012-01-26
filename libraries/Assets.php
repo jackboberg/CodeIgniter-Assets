@@ -15,8 +15,8 @@ class Assets {
 
     private $ci;
 
-    protected $script_dir   = 'assets/scripts/';
-    protected $style_dir    = 'assets/styles/';
+    protected $script_dirs   = array('assets/scripts/');
+    protected $style_dirs    = array('assets/styles/');
     protected $cache_dir    = 'assets/cache/';
 
     protected $combine_css  = TRUE;
@@ -28,8 +28,11 @@ class Assets {
     protected $auto_update  = TRUE;
     protected $cache        = NULL;
 
+    protected $static_cache = FALSE;
+
     private $store = array();
     private $groups = array();
+    private $current_group = NULL;
 
     // --------------------------------------------------------------------
 
@@ -263,6 +266,10 @@ class Assets {
         {
             $group = 'main';
         }
+        if (empty($this->current_group)) 
+        {
+            $this->current_group = $group;
+        }
         $output = '';
         if (is_null($type))
         {
@@ -295,6 +302,7 @@ class Assets {
                 $output .= $this->get_links('js', $assets['js'], $combine_js, $minify_js);
                 break;
         }
+        $this->current_group = NULL;
         return $output;
     }
 
@@ -370,31 +378,13 @@ class Assets {
     {
         // check for cached file
         $filename = $this->get_cache_filename($type, $assets);
-        if ( ! is_file(APPPATH . $this->cache_dir . $filename))
+        if ( ! is_file(APPPATH . '../' . $this->cache_dir . $filename) || ($this->static_cache && $this->get_last_modified($type,$assets) > filemtime($this->cache_dir . $filename)))
         {
             // build filedata
             $filedata = '';
             foreach ($assets as $a)
             {
-                if (filter_var($a['path'], FILTER_VALIDATE_URL))
-                {
-                    // use modified read_file for remote files
-                    $filedata .= $this->read_file($a['path']);
-                }
-                else
-                {
-                    // for local files use the system read_file
-                    switch ($type)
-                    {
-                        case 'css':
-                            $path = $this->style_dir . $a['path'];
-                            break;
-                        default:
-                            $path = $this->script_dir . $a['path'];
-                            break;
-                    }
-                    $filedata .= read_file($path);
-                }
+                $filedata .= $this->get_file($a['path'],$type);
             }
             // write to cache
             if ( ! write_file($this->cache_dir . $filename, $filedata))
@@ -428,14 +418,7 @@ class Assets {
             {
                 // have we minified this file in the past
                 $min_path = $this->get_minified_path($type, $a['path']);
-                if ($type == 'css')
-                {
-                    $dir = $this->style_dir;
-                }
-                else
-                {
-                    $dir = $this->script_dir;
-                }
+                $dir = $this->get_path($a['path'],$type);
                 if ( ! is_file($dir . $min_path))
                 {
                     // minify the file and write to path
@@ -489,7 +472,7 @@ class Assets {
         }
         // check for cached file
         $filename = $this->get_cache_filename($type, $min_assets);
-        if ( ! is_file(APPPATH . $this->cache_dir . $filename))
+        if ( ! is_file(APPPATH . '../' . $this->cache_dir . $filename) || ($this->static_cache && $this->get_last_modified($type,$assets) > filemtime($this->cache_dir . $filename)))
         {
             // call method to generate files
             $this->get_minified_links($type, $assets, $media);
@@ -550,31 +533,13 @@ class Assets {
      **/
     public function minify($type, $path, $min_path)
     {
-        // read file into variable
-        if (filter_var($path, FILTER_VALIDATE_URL))
-        {
-            // use modified read_file for remote files
-            $contents = $this->read_file($path);
-        }
-        else
-        {
-            // for local files use the system read_file
-            switch ($type)
-            {
-                case 'css':
-                    $path = $this->style_dir . $path;
-                    break;
-                default:
-                    $path = $this->script_dir . $path;
-                    break;
-            }
-            $contents = read_file($path);
-        }
-        // ensure we have some content
+        $contents = $this->get_file($path,$type);
+       // ensure we have some content
         if ( ! $contents)
         {
             return FALSE;
         }
+        $dir = $this->get_path($path,$type);
         // minimize the contents
         $output = '';
         switch($type)
@@ -585,7 +550,7 @@ class Assets {
                 break;
             case 'css':
                 $this->ci->load->library('cssmin');
-                $config['relativePath'] = site_url($this->style_dir) .'/';
+                $config['relativePath'] = site_url($dir) .'/';
                 $this->ci->cssmin->config($config);
                 $output .= $this->ci->cssmin->minify($contents);
                 break;
@@ -618,16 +583,27 @@ class Assets {
                     $this->cache = json_decode($filedata, TRUE);
                 }
             }
-            // look up filename in cache
+        }
+        // look up filename in cache
+        if ($this->static_cache) 
+        {
+            $hash = $this->current_group;
+            if ($this->{'minify_'.$type}) 
+            {
+                $hash .= '.min';
+            }
+        }
+        else
+        {
             $hash = md5(json_encode($assets));
             if (isset($this->cache[$hash]))
             {
                 return $this->cache[$hash];
             }
+            $modified = $this->get_last_modified($type, $assets);
+            $hash = md5(json_encode($assets) . $modified);
         }
         // generate hashed filename based on modification date
-        $modified = $this->get_last_modified($type, $assets);
-        $hash = md5(json_encode($assets) . $modified);
         return  $hash . '.' . $type;
     }
 
@@ -682,16 +658,8 @@ class Assets {
             // only check local files
             if ( ! filter_var($a['path'], FILTER_VALIDATE_URL))
             {
-                switch ($type)
-                {
-                    case 'css':
-                        $path = $this->style_dir . $a['path'];
-                        break;
-                    default:
-                        $path = $this->script_dir . $a['path'];
-                        break;
-                }
-                if (is_file($path))
+                $path = $this->get_path($a['path'],$type);
+                if (is_file($path . $a['path']))
                 {
                     $timestamp = max($timestamp, filemtime($path));
                 }
@@ -754,33 +722,34 @@ class Assets {
     {
         $output = '';
         // is this a local path?
+        $url = $path;
         if ( ! filter_var($path, FILTER_VALIDATE_URL))
         {
             if ($cache)
             {
                 $dir = $this->cache_dir;
             }
-            elseif ($type == 'css')
-            {
-                $dir = $this->style_dir;
-            }
             else
             {
-                $dir = $this->script_dir;
+                $dir = $this->get_path($path,$type);
             }
-            $path = site_url($dir . $path);
+            $url = site_url($dir . $path);
+            if ($this->static_cache) 
+            {   
+                $url .= '?cache=' . filemtime($dir . $path);
+            }
         }
         switch($type)
         {
             case 'css':
                 $output .= '<link type="text/css" rel="stylesheet" href="'
-                    . $path
+                    . $url
                     . '" media="' . $media
                     . '" />' . "\r\n";
                 break;
             case 'js':
                 $output .= '<script type="text/javascript" src="'
-                    . $path
+                    . $url
                     . '"></script>' . "\r\n";
                 break;
         }
@@ -824,6 +793,68 @@ class Assets {
         fclose($fp);
 
         return $data;
+    }
+    
+    // --------------------------------------------------------------------
+
+    /**
+     * find and return file from correct directory
+     *
+     * @param   string  $file  filename
+     * @param   string  $ext  file extension
+     * @access  public 
+     * 
+     * @return  string
+     **/
+    public function get_file($file,$ext)
+    {
+        // read file into variable
+        if (filter_var($file, FILTER_VALIDATE_URL))
+        {
+            // use modified read_file for remote files
+            $result = $this->read_file($file);
+        }
+        else
+        {
+            if( ! $path = $this->get_path($file,$ext))
+            {
+                return FALSE;
+            }
+            $result = $this->read_file($path . '/' . $file); 
+        }
+        return $result;
+    }
+    
+    // --------------------------------------------------------------------
+
+    /**
+     * get file path of asset
+     *
+     * @param   string  filename to search for
+     * @access  public 
+     * 
+     * @return string  path to file
+     **/
+    public function get_path($filename,$ext)
+    {
+        // for local files use the system read_file
+        switch ($ext)
+        {
+            case 'css':
+                $paths = $this->style_dirs;
+                break;
+            default:
+                $paths = $this->script_dirs;
+                break;
+        }
+        foreach ($paths as $path)
+        {
+            if (is_file($path . '/' . $filename)) 
+            {
+                return $path;
+            }
+        }
+        return FALSE;
     }
 
     // --------------------------------------------------------------------
