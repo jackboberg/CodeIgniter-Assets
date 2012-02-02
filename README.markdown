@@ -20,6 +20,19 @@ library easier in view files.
 
     $this->load->helper('assets');
 
+### Configuring Asset Directories
+
+To provide support for subdirectories and multiple asset locations, assets can
+be added from one or more directories as an array from the config. 
+
+    $config['script_dirs'] = array(
+        'assets/scripts/',
+        'assets/scripts/subfolder'
+    );
+    
+    $config['style_dirs'] = array('assets/styles');
+
+Asset directories should be specified as relative paths from the root application folder.
 
 ### Adding Assets
 
@@ -117,3 +130,32 @@ the library will use the global values in the library.
 * **media**: CSS only. eg: 'print', 'screen', 'all and (min-width:500px)'
 * **combine**: should we combine both asset types in this group
 * **minify**: should we minify both asset types in this group
+
+### Caching Assets
+
+#### Auto-updating Asset Caches
+
+By default the asset cache is automatically updated when a change is made to
+any individual update.
+
+    $config['auto_update'] = TRUE;
+
+When auto-update is enabled, the asset manager checks each asset file's
+modification date on each page load to ensure that all cached files are up to
+date.  
+
+If auto-update is disabled, a store file is built for fast file lookups.
+
+#### Static Caching
+
+When asset combining is enabled, cache busting is by default employed using unique hash strings to name a new cache file whenever an asset is modified.  
+
+    $config['static_cache'] = TRUE;
+
+By enabling static caching in the config, the asset manager instead uses the
+asset's group name to name the file.  Any assets that are either not added to a
+group or belong to an unnamed group are added to the default group ("main"). 
+
+To ensure that the browser recaches assets using static names, the asset
+manager appends a query string to the filename when the combined asset is
+linked in an HTML document.
