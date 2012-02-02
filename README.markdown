@@ -32,7 +32,7 @@ be added from one or more directories as an array from the config.
     
     $config['style_dirs'] = array('assets/styles');
 
-Asset directories should be specified as relative paths from the root application folder.
+Asset directories should be specified as relative paths from the index file.
 
 ### Adding Assets
 
