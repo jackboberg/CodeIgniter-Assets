@@ -266,7 +266,7 @@ class Assets {
         {
             $group = 'main';
         }
-        if (empty($this->current_group)) 
+        if (empty($this->current_group))
         {
             $this->current_group = $group;
         }
@@ -422,7 +422,7 @@ class Assets {
                 if ( ! is_file($dir . $min_path))
                 {
                     // minify the file and write to path
-                    $this->minify($type, $a['path'], $dir . $min_path); 
+                    $this->minify($type, $a['path'], $dir . $min_path);
                 }
                 else
                 {
@@ -432,7 +432,7 @@ class Assets {
                     if ($orig_info['date'] > $min_info['date'])
                     {
                         // re-minify the file and write to path
-                        $this->minify($type, $a['path'], $dir . $min_path); 
+                        $this->minify($type, $a['path'], $dir . $min_path);
                     }
                 }
                 $a['min'] = $min_path;
@@ -494,12 +494,12 @@ class Assets {
      * @return  string
      **/
     private function get_minified_path($type, $path)
-    {   
+    {
         if (filter_var($path, FILTER_VALIDATE_URL))
         {
             // remote path, just get the filename
             $filename = substr(strrchr($path, '/'), 1);
-            return substr($filename, 0, strrpos($filename, '.')) . '.min.' . $type; 
+            return substr($filename, 0, strrpos($filename, '.')) . '.min.' . $type;
         }
         else
         {
@@ -515,7 +515,7 @@ class Assets {
             {
                 $filename = $path;
             }
-            return substr($filename, 0, strrpos($filename, '.')) . '.min.' . $type; 
+            return substr($filename, 0, strrpos($filename, '.')) . '.min.' . $type;
         }
     }
 
@@ -571,7 +571,7 @@ class Assets {
      * @return  string
      **/
     private function get_cache_filename($type, $assets)
-    { 
+    {
         if ( ! $this->auto_update)
         {
             // have we loaded the store
@@ -585,10 +585,10 @@ class Assets {
             }
         }
         // look up filename in cache
-        if ($this->static_cache) 
+        if ($this->static_cache)
         {
             $hash = $this->current_group;
-            if ($this->{'minify_'.$type}) 
+            if ($this->{'minify_'.$type})
             {
                 $hash .= '.min';
             }
@@ -637,7 +637,7 @@ class Assets {
         $store[$hash] = $filename;
         // write it back to file
         $filedata = json_encode($store);
-        write_file($this->cache_dir . 'store.json', $filedata); 
+        write_file($this->cache_dir . 'store.json', $filedata);
     }
 
     // --------------------------------------------------------------------
@@ -733,9 +733,9 @@ class Assets {
             {
                 $dir = $this->get_path($path,$type);
             }
-            $url = site_url($dir . $path);
-            if ($this->static_cache) 
-            {   
+            $url = base_url($dir . $path);
+            if ($this->static_cache)
+            {
                 $url .= '?cache=' . filemtime($dir . $path);
             }
         }
@@ -754,7 +754,7 @@ class Assets {
                 break;
         }
         return $output;
-    }    
+    }
 
     // --------------------------------------------------------------------
 
@@ -794,7 +794,7 @@ class Assets {
 
         return $data;
     }
-    
+
     // --------------------------------------------------------------------
 
     /**
@@ -802,8 +802,8 @@ class Assets {
      *
      * @param   string  $file  filename
      * @param   string  $ext  file extension
-     * @access  public 
-     * 
+     * @access  public
+     *
      * @return  string
      **/
     public function get_file($file,$ext)
@@ -820,19 +820,19 @@ class Assets {
             {
                 return FALSE;
             }
-            $result = $this->read_file($path . '/' . $file); 
+            $result = $this->read_file($path . '/' . $file);
         }
         return $result;
     }
-    
+
     // --------------------------------------------------------------------
 
     /**
      * get file path of asset
      *
      * @param   string  filename to search for
-     * @access  public 
-     * 
+     * @access  public
+     *
      * @return string  path to file
      **/
     public function get_path($filename,$ext)
@@ -849,7 +849,7 @@ class Assets {
         }
         foreach ($paths as $path)
         {
-            if (is_file($path . '/' . $filename)) 
+            if (is_file($path . '/' . $filename))
             {
                 return $path;
             }
