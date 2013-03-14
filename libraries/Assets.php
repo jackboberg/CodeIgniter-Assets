@@ -661,7 +661,7 @@ class Assets {
                 $path = $this->get_path($a['path'],$type);
                 if (is_file($path . $a['path']))
                 {
-                    $timestamp = max($timestamp, filemtime($path));
+                    $timestamp = max($timestamp, filemtime($path . $a['path']));
                 }
             }
         }
