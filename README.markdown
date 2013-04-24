@@ -1,21 +1,35 @@
-Codeigniter Assets
-==================
+### Do not use? ##
 
-This package helps manage your CSS and JS files. You can configure the library to 
-combine, minify, and cache assets. Cached assets are automatically regenerated if 
-any file has been edited since the last cache file was generated.
+**This code is partially *abandoned*. I haven't been using it (or CodeIgniter)
+for quite a while. There have been some issues raised that claim the current
+implmentaion is broken. I don't have the time (or interest) currently to fix
+it.**
+
+I would gladly accept pull-requests to update/fix any issues you encounter, if
+really want to use this library. I would suggest instead though, that you find
+a replacement [composer package](http://getcomposer.org), preferably one that
+supports more features (eg: SASS, Less, CoffeeScript).
+
+---
+
+# Codeigniter Assets
+
+This package helps manage your CSS and JS files. You can configure the library
+to combine, minify, and cache assets. Cached assets are automatically
+regenerated if any file has been edited since the last cache file was
+generated.
 
 
 ## USAGE
 
 Load the library as normal:
 
-	$this->load->library('assets');
+    $this->load->library('assets');
 
     // optionally pass a config array
-	$this->load->library('assets', $config);
+    $this->load->library('assets', $config);
 
-All the public methods have aliased helper functions to make working with the 
+All the public methods have aliased helper functions to make working with the
 library easier in view files.
 
     $this->load->helper('assets');
@@ -23,21 +37,22 @@ library easier in view files.
 ### Configuring Asset Directories
 
 To provide support for subdirectories and multiple asset locations, assets can
-be added from one or more directories as an array from the config. 
+be added from one or more directories as an array from the config.
 
     $config['script_dirs'] = array(
         'assets/scripts/',
         'assets/scripts/subfolder'
     );
-    
+
     $config['style_dirs'] = array('assets/styles');
 
 Asset directories should be specified as relative paths from the index file.
 
 ### Adding Assets
 
-Adding assets can be done one at a time, or by passing an array. You can mix your 
-JS and CSS assets together, the library will manage them seperately for you.
+Adding assets can be done one at a time, or by passing an array. You can mix
+your JS and CSS assets together, the library will manage them seperately for
+you.
 
     $this->assets->add('layout.css');
 
@@ -63,8 +78,8 @@ You can optionally define a pre-minimized asset.
 
 ### Using groups
 
-Assets can be grouped, they will be combined only with assets from their group and 
-saved as a seperate cache.
+Assets can be grouped, they will be combined only with assets from their group
+and saved as a seperate cache.
 
     $this->assets->add($assets, $group_name);
 
@@ -82,8 +97,8 @@ Groups can be combined, allowing you to create a new group from existing groups.
 
 ### Outputing Links
 
-You can output all links, or just one asset type. The library will return strings 
-of HTML tags to be echoed in your view files.
+You can output all links, or just one asset type. The library will return
+strings of HTML tags to be echoed in your view files.
 
     echo $this->assets->get_assets();
     // or use the helper alias
@@ -107,7 +122,7 @@ You can output only assets from a specified group.
 
 #### Configuring Output
 
-All of the output helpers accept a second *$config* parameter. If not specified, 
+All of the output helpers accept a second *$config* parameter. If not specified,
 the library will use the global values in the library.
 
     $config = array(
@@ -142,19 +157,20 @@ any individual update.
 
 When auto-update is enabled, the asset manager checks each asset file's
 modification date on each page load to ensure that all cached files are up to
-date.  
+date.
 
 If auto-update is disabled, a store file is built for fast file lookups.
 
 #### Static Caching
 
-When asset combining is enabled, cache busting is by default employed using unique hash strings to name a new cache file whenever an asset is modified.  
+When asset combining is enabled, cache busting is by default employed using
+unique hash strings to name a new cache file whenever an asset is modified.
 
     $config['static_cache'] = TRUE;
 
 By enabling static caching in the config, the asset manager instead uses the
 asset's group name to name the file.  Any assets that are either not added to a
-group or belong to an unnamed group are added to the default group ("main"). 
+group or belong to an unnamed group are added to the default group ("main").
 
 To ensure that the browser recaches assets using static names, the asset
 manager appends a query string to the filename when the combined asset is
